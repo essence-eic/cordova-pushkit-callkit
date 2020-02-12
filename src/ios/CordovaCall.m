@@ -26,7 +26,7 @@ BOOL enableDTMF = NO;
     - (void)receiveCall:(CDVInvokedUrlCommand*)command;
     - (void)sendCall:(CDVInvokedUrlCommand*)command;
     - (void)connectCall:(CDVInvokedUrlCommand*)command;
-    - (void)connectCallInside:(NSTimer *)timer;
+    - (void)answerCall:(CDVInvokedUrlCommand*)command;
     - (void)endCall:(CDVInvokedUrlCommand*)command;
     - (void)registerEvent:(CDVInvokedUrlCommand*)command;
     - (void)mute:(CDVInvokedUrlCommand*)command;
@@ -76,36 +76,32 @@ BOOL enableDTMF = NO;
        [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
    }
 }
-- (void)connectCallInside:(NSTimer *)timer {
 
-    NSArray<CXCall *> *calls = self.callController.callObserver.calls;
-    NSLog(@"[objC] connectCallInside: %@", calls[0].UUID);
-    
-    CXAnswerCallAction *answerCallAction = [[CXAnswerCallAction alloc] initWithCallUUID:calls[0].UUID];
-    CXTransaction *transaction = [[CXTransaction alloc] initWithAction:answerCallAction];
-    [self.callController requestTransaction:transaction completion:^(NSError * _Nullable error) {
-      if (error == nil) {
-          NSLog(@"[objC] connectCallInside success: %@", calls[0].UUID);
-      } else {
-          NSLog(@"[objC] connectCallInside error: %@", calls[0].UUID);
-      }
-    }];
-
-}
 - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type
 {
-    NSDictionary *payloadDict = payload.dictionaryPayload[@"aps"];
+   NSDictionary *payloadDict = payload.dictionaryPayload[@"aps"];
     NSLog(@"[objC] didReceiveIncomingPushWithPayload: %@", payloadDict);
 
     NSString *message = payloadDict[@"alert"];
     NSLog(@"[objC] received VoIP msg: %@", message);
 
-    
     NSMutableDictionary* results = [NSMutableDictionary dictionaryWithCapacity:2];
     [results setObject:message forKey:@"function"];
     [results setObject:@"someOtherDataForField" forKey:@"someOtherField"];
 
-    NSUUID *callUUID = [[NSUUID alloc] init];
+
+    NSArray* receiveCallCommandArray = @[@"Ready", [NSNull null]];
+    CDVInvokedUrlCommand *receiveCallCommand = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
+
+    if ([message isEqualToString:@"true"])
+    {
+      NSArray* receiveCallCommandSilenceArray = @[@"silence"];
+      CDVInvokedUrlCommand *receiveCallCommandSilence = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandSilenceArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
+      [self setRingtone:receiveCallCommandSilence ];
+    }
+
+    [self receiveCall:receiveCallCommand ];
+    /* NSUUID *callUUID = [[NSUUID alloc] init];
 
     CXHandle *handle = [[CXHandle alloc] initWithType:CXHandleTypePhoneNumber value:appName];
     CXCallUpdate *callUpdate = [[CXCallUpdate alloc] init];
@@ -134,7 +130,7 @@ BOOL enableDTMF = NO;
         ];
 
         [self.commandDelegate sendPluginResult:pluginResult callbackId:self.VoIPPushCallbackId];
-    }];
+    }];*/
     
 
 }
@@ -277,8 +273,8 @@ BOOL enableDTMF = NO;
 
 - (void)receiveCall:(CDVInvokedUrlCommand*)command
 {
+
     BOOL hasId = ![[command.arguments objectAtIndex:1] isEqual:[NSNull null]];
-    CDVPluginResult* pluginResult = nil;
     NSString* callName = [command.arguments objectAtIndex:0];
     NSString* callId = hasId?[command.arguments objectAtIndex:1]:callName;
     NSUUID *callUUID = [[NSUUID alloc] init];
@@ -361,7 +357,27 @@ BOOL enableDTMF = NO;
 
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
+- (void)answerCall:(CDVInvokedUrlCommand *)command {
 
+    NSArray<CXCall *> *calls = self.callController.callObserver.calls;
+
+      if([calls count] == 1) {
+    
+        CXAnswerCallAction *answerCallAction = [[CXAnswerCallAction alloc] initWithCallUUID:calls[0].UUID];
+        CXTransaction *transaction = [[CXTransaction alloc] initWithAction:answerCallAction];
+            
+        [self.callController requestTransaction:transaction completion:^(NSError * _Nullable error) {
+              if (error == nil) {
+                  [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"AnswerCall successful"] callbackId:command.callbackId];
+              } else {
+                  [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]] callbackId:command.callbackId];
+              }
+          }];
+
+      } else {
+          [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"No call exists for you to connect"] callbackId:command.callbackId];
+      }
+}
 - (void)endCall:(CDVInvokedUrlCommand*)command
 {
     CDVPluginResult* pluginResult = nil;

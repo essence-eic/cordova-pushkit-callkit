@@ -66,6 +66,10 @@ exports.connectCall = function(success, error) {
     exec(success, error, "CordovaCall", "connectCall", []);
 };
 
+exports.answerCall = function(success, error) {
+  exec(success, error, "CordovaCall", "answerCall", []);
+};
+
 exports.endCall = function(success, error) {
     exec(success, error, "CordovaCall", "endCall", []);
 };
