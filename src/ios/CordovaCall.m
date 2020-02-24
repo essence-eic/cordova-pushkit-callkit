@@ -98,18 +98,22 @@ BOOL enableDTMF = NO;
         [pluginResult setKeepCallbackAsBool:YES];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
     }
+    
+    NSArray<CXCall *> *calls = self.callController.callObserver.calls;
+    if([calls count] == 0) {
+      NSArray* receiveCallCommandArray = @[@"Ready", [NSNull null]];
+      CDVInvokedUrlCommand *receiveCallCommand = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
 
-    NSArray* receiveCallCommandArray = @[@"Ready", [NSNull null]];
-    CDVInvokedUrlCommand *receiveCallCommand = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
+      //if (silentMode)
+      //{
+      //  NSArray* receiveCallCommandSilenceArray = @[@"silence"];
+      //  CDVInvokedUrlCommand *receiveCallCommandSilence = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandSilenceArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
+        //[self setRingtone:receiveCallCommandSilence ];
+      //}
 
-    //if (silentMode)
-    //{
-    //  NSArray* receiveCallCommandSilenceArray = @[@"silence"];
-    //  CDVInvokedUrlCommand *receiveCallCommandSilence = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandSilenceArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
-      //[self setRingtone:receiveCallCommandSilence ];
-    //}
+      [self receiveCall:receiveCallCommand ];
+   }
 
-    [self receiveCall:receiveCallCommand ];
     /* NSUUID *callUUID = [[NSUUID alloc] init];
 
     CXHandle *handle = [[CXHandle alloc] initWithType:CXHandleTypePhoneNumber value:appName];
