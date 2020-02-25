@@ -36,6 +36,8 @@
     </config-file>
     <config-file target="*-Info.plist" parent="UIBackgroundModes">
       <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
         <string>voip</string>
       </array>
     </config-file>
@@ -47,5 +49,6 @@
     </config-file>
     <source-file src="src/ios/AppDelegateCordovaCall.m" />
     <source-file src="src/ios/CordovaCall.m" />
+    <framework src="PushKit.framework" />
   </platform>
 </plugin>
