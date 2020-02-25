@@ -99,20 +99,19 @@ BOOL enableDTMF = NO;
         [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
     }
     
-    NSArray<CXCall *> *calls = self.callController.callObserver.calls;
-    if([calls count] == 0) {
-      NSArray* receiveCallCommandArray = @[@"Ready", [NSNull null]];
-      CDVInvokedUrlCommand *receiveCallCommand = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
+  
+    NSArray* receiveCallCommandArray = @[@"Ready", [NSNull null]];
+    CDVInvokedUrlCommand *receiveCallCommand = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
 
-      //if (silentMode)
-      //{
-      //  NSArray* receiveCallCommandSilenceArray = @[@"silence"];
-      //  CDVInvokedUrlCommand *receiveCallCommandSilence = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandSilenceArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
-        //[self setRingtone:receiveCallCommandSilence ];
-      //}
+    //if (silentMode)
+    //{
+    //  NSArray* receiveCallCommandSilenceArray = @[@"silence"];
+    //  CDVInvokedUrlCommand *receiveCallCommandSilence = [[CDVInvokedUrlCommand alloc] initWithArguments:receiveCallCommandSilenceArray callbackId:self.VoIPPushCallbackId className:@"CordovaCall" methodName:@"receiveCall" ];
+    //[self setRingtone:receiveCallCommandSilence ];
+    //}
 
-      [self receiveCall:receiveCallCommand ];
-   }
+    [self receiveCall:receiveCallCommand ];
+   
 
     /* NSUUID *callUUID = [[NSUUID alloc] init];
 
@@ -292,38 +291,46 @@ BOOL enableDTMF = NO;
     NSString* callName = [command.arguments objectAtIndex:0];
     NSString* callId = hasId?[command.arguments objectAtIndex:1]:callName;
     NSUUID *callUUID = [[NSUUID alloc] init];
+    
+    NSArray<CXCall *> *calls = self.callController.callObserver.calls;
 
-    if (hasId) {
-        [[NSUserDefaults standardUserDefaults] setObject:callName forKey:[command.arguments objectAtIndex:1]];
-        [[NSUserDefaults standardUserDefaults] synchronize];
-    }
+    if([calls count] == 0) {
 
-    if (callName != nil && [callName length] > 0) {
-        CXHandle *handle = [[CXHandle alloc] initWithType:CXHandleTypePhoneNumber value:callId];
-        CXCallUpdate *callUpdate = [[CXCallUpdate alloc] init];
-        callUpdate.remoteHandle = handle;
-        callUpdate.hasVideo = hasVideo;
-        callUpdate.localizedCallerName = callName;
-        callUpdate.supportsGrouping = NO;
-        callUpdate.supportsUngrouping = NO;
-        callUpdate.supportsHolding = NO;
-        callUpdate.supportsDTMF = enableDTMF;
-
-        [self.provider reportNewIncomingCallWithUUID:callUUID update:callUpdate completion:^(NSError * _Nullable error) {
-            if(error == nil) {
-                [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Incoming call successful"] callbackId:command.callbackId];
-            } else {
-                [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]] callbackId:command.callbackId];
-            }
-        }];
-        for (id callbackId in callbackIds[@"receiveCall"]) {
-            CDVPluginResult* pluginResult = nil;
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"receiveCall event called successfully"];
-            [pluginResult setKeepCallbackAsBool:YES];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
+        if (hasId) {
+            [[NSUserDefaults standardUserDefaults] setObject:callName forKey:[command.arguments objectAtIndex:1]];
+            [[NSUserDefaults standardUserDefaults] synchronize];
         }
+
+        if (callName != nil && [callName length] > 0) {
+            CXHandle *handle = [[CXHandle alloc] initWithType:CXHandleTypePhoneNumber value:callId];
+            CXCallUpdate *callUpdate = [[CXCallUpdate alloc] init];
+            callUpdate.remoteHandle = handle;
+            callUpdate.hasVideo = hasVideo;
+            callUpdate.localizedCallerName = callName;
+            callUpdate.supportsGrouping = NO;
+            callUpdate.supportsUngrouping = NO;
+            callUpdate.supportsHolding = NO;
+            callUpdate.supportsDTMF = enableDTMF;
+
+            [self.provider reportNewIncomingCallWithUUID:callUUID update:callUpdate completion:^(NSError * _Nullable error) {
+                if(error == nil) {
+                    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Incoming call successful"] callbackId:command.callbackId];
+                } else {
+                    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]] callbackId:command.callbackId];
+                }
+            }];
+            for (id callbackId in callbackIds[@"receiveCall"]) {
+                CDVPluginResult* pluginResult = nil;
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"receiveCall event called successfully"];
+                [pluginResult setKeepCallbackAsBool:YES];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
+            }
+        } else {
+            [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Caller id can't be empty"] callbackId:command.callbackId];
+        }
+                
     } else {
-        [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Caller id can't be empty"] callbackId:command.callbackId];
+        [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Only one call permited"] callbackId:command.callbackId];
     }
 }
 
